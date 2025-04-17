@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Weasleys - A Magical Tale</title>
     <meta name="description" content="An interactive wizarding world experience featuring the Weasley family">
-    <link rel="stylesheet" href="style.css">
+    <!-- Add preload for critical assets -->
+    <link rel="preload" href="style.css" as="style">
+    <link rel="preload" href="cover_art.png" as="image" fetchpriority="high">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <!-- Placeholder for Lumos font, will use Copperplate as fallback -->
 </head>
 <body>
@@ -34,7 +38,7 @@
                 <p><span class="drop-cap">N</span>o amount of magic could cure the gloomy mood settling over eleven-year-old Billius Weasley one summer afternoon. The Burrow's kitchen was, as usual, in a state of chaos. Dirty breakfast plates floated unsteadily toward the sink, gently colliding before plunging back into the soapy water magically swirled by a common household charm. On the back of a chair, a half-finished jumper continued knitting itself, the needles clicking softly as they added more stitches to what appeared to be a maroon sleeve. Several grumpy garden gnomes huddled outside the window, still upset after being abruptly woken up by an irritable Ronin.</p>
                 
                 <figure class="illustration">
-                    <img src="img/illus-01.png" alt="Billius looking slightly sad in the Burrow kitchen" loading="lazy">
+                    <img src="img/illus-01.png" alt="Billius looking slightly sad in the Burrow kitchen" loading="lazy" width="400" height="300">
                 </figure>
                 
                 <p>Breakfast plates zoomed towards the sink like badly aimed Quaffles, kicking off another morning at the Burrow, the wonderfully crooked house the Weasley family called home. Inside its cheerful kitchen, the usual magical chaos reigned: dirty dishes levitated towards soapy water stirred by an invisible hand, while a half-knitted jumper draped over a chair clicked its needles together, steadily adding rows to a lopsided maroon sleeve. Just outside the window, a cluster of recently evicted garden gnomes huddled by the muddy Wellington boots. Still cross from being whirled overhead and tossed over the hedge by thirteen-year-old Ronin Weasley earlier that morning, they shook their knobbly fists and grumbled tiny, earthy curses at the kitchen window.</p>
@@ -54,7 +58,7 @@
                 <p>But Ronin's hand seemed to mock him, vibrating with anticipation. Maybe… maybe if he just gave it a tiny nudge? Just to see what happened? His fingers hovered over the smooth, golden surface of Ronin's hand. He wasn't trying to break it, not really. He just wanted it to stop being so...  <em>smug</em>.</p>
                 
                 <figure class="illustration">
-                    <img src="img/illus-03.png" alt="Billius about to touch the magic family clock, his hand hesitantly reaching out towards the twitching clock hand" loading="lazy">
+                    <img src="img/illus-03.png" alt="Billius about to touch the magic family clock, his hand hesitantly reaching out towards the twitching clock hand" loading="lazy" width="400" height="300">
                 </figure>
                 
                 <p>With a sudden, impulsive movement, Billius tapped Ronin's hand firmly.</p>
@@ -102,7 +106,7 @@
                 <p>"Good gracious!" Mum exclaimed, jumping back as the needles began clattering aggressively against the side of the stew cauldron. "Stop that! Finite!"</p>
                 
                 <figure class="illustration">
-                    <img src="img/illus-02.png" alt="A magical couldron cooking stew, erupting with craziness ensuing all around it" loading="lazy">
+                    <img src="img/illus-02.png" alt="A magical couldron cooking stew, erupting with craziness ensuing all around it" loading="lazy" width="400" height="300">
                 </figure>
                 
                 <p>The needles ignored her command, clicking with even greater fury. Stitches unraveled as fast as new ones were formed, the jumper tangling itself into a hopeless mess.</p>
@@ -144,7 +148,7 @@
                 <p>Ronin whirled away from the clock, his face grim. He jabbed a finger towards the empty space where his clock hand should have been, then pointed that same finger directly at Billius.</p>
                 
                 <figure class="illustration">
-                    <img src="img/illus-04.png" alt="Billius freaking out because he just broke the clock, looking panicked while checking over his shoulder" loading="lazy">
+                    <img src="img/illus-04.png" alt="Billius freaking out because he just broke the clock, looking panicked while checking over his shoulder" loading="lazy" width="400" height="300">
                 </figure>
                 
                 <p>"Alright," Ronin said, his voice low and dangerously calm, a tone Billius knew usually came just before an explosion. "Spill it. What did you do?"</p>
@@ -198,7 +202,7 @@
                 <p>That was Ronin's chance. He lunged forward, quick as a garden snake. His hand closed around the small, golden object just as the Nibbler realized it had been tricked. With an enraged shriek, the gnome launched itself, not at Billius, but straight at Ronin's retreating ankle.</p>
                 
                 <figure class="illustration">
-                    <img src="img/illus-06.png" alt="Ronin getting bitten by the gnome outside in the garden" loading="lazy">
+                    <img src="img/illus-06.png" alt="Ronin getting bitten by the gnome outside in the garden" loading="lazy" width="400" height="300">
                 </figure>
                 
                 <p>"Ow! Get off!" Ronin yelled, hopping backwards and shaking his leg vigorously, the gnome clinging on like a furry, potato-shaped action figure.</p>
@@ -236,7 +240,7 @@
                 <p>The angry teapot stopped whistling and settled back onto the stove with a contented sigh. The saucepans ceased their duel and resumed their orderly scrubbing. The spool of maroon wool zipped itself back onto the floating needles and resumed knitting. Dad popped fully out of the bread bin with a sigh of relief, looking around unsure how he'd gotten there. The frantic energy drained out of the room, replaced by the usual, comfortable hum of the Weasley household.</p>
                 
                 <figure class="illustration clock-restored">
-                    <img src="img/illus-05.png" alt="The Weasley household very peaceful and back to normal" loading="lazy">
+                    <img src="img/illus-05.png" alt="The Weasley household very peaceful and back to normal" loading="lazy" width="400" height="300">
                 </figure>
                 
                 <p>Mum turned, her eyes narrowed slightly as she sat Ronin down on the stool, beginning to nurse his chewed-up ankle.</p>

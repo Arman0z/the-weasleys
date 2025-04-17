@@ -157,7 +157,41 @@ function animateClockHands() {
   let billiusState = 'normal';
   let billiusTimer = 0;
   
-  function updateHands() {
+  // Throttle variables for animation performance
+  let lastFrameTime = 0;
+  const frameThrottle = 1000 / 30; // Limit to 30 FPS for clock animation
+  
+  // Pre-compute expensive values
+  const PI_180 = Math.PI / 180;
+  const sin = {};
+  const cos = {};
+  
+  // Pre-calculate sin and cos values for common angles
+  for (let angle = 0; angle <= 360; angle++) {
+    sin[angle] = Math.sin(angle * PI_180);
+    cos[angle] = Math.cos(angle * PI_180);
+  }
+  
+  // Get nearest pre-calculated value
+  function getSin(angle) {
+    const roundedAngle = Math.round(angle);
+    return sin[roundedAngle >= 0 ? roundedAngle % 360 : (roundedAngle % 360) + 360];
+  }
+  
+  function getCos(angle) {
+    const roundedAngle = Math.round(angle);
+    return cos[roundedAngle >= 0 ? roundedAngle % 360 : (roundedAngle % 360) + 360];
+  }
+  
+  function updateHands(timestamp) {
+    // Throttle frame rate for better performance
+    if (timestamp - lastFrameTime < frameThrottle) {
+      requestAnimationFrame(updateHands);
+      return;
+    }
+    
+    lastFrameTime = timestamp;
+    
     // Update Ronin's hand
     if (roninDirection === 1) {
       roninAngle += 0.5;
@@ -167,10 +201,10 @@ function animateClockHands() {
       if (roninAngle <= 0) roninDirection = 1;
     }
     
-    roninHand.setAttribute('x2', 100 + 70 * Math.sin(roninAngle * Math.PI / 180));
-    roninHand.setAttribute('y2', 100 - 70 * Math.cos(roninAngle * Math.PI / 180));
+    roninHand.setAttribute('x2', 100 + 70 * getSin(roninAngle));
+    roninHand.setAttribute('y2', 100 - 70 * getCos(roninAngle));
     
-    // Update Billius's hand
+    // Update Billius's hand - only update every other frame 
     billiusTimer++;
     
     if (billiusState === 'normal' && billiusTimer > 200) {
@@ -195,8 +229,8 @@ function animateClockHands() {
     }
     
     if (billiusState !== 'normal') {
-      billiusHand.setAttribute('x2', 100 + 70 * Math.sin(billiusAngle * Math.PI / 180));
-      billiusHand.setAttribute('y2', 100 - 70 * Math.cos(billiusAngle * Math.PI / 180));
+      billiusHand.setAttribute('x2', 100 + 70 * getSin(billiusAngle));
+      billiusHand.setAttribute('y2', 100 - 70 * getCos(billiusAngle));
     }
     
     requestAnimationFrame(updateHands);
@@ -255,50 +289,94 @@ function initGnomePopups() {
   // Create magic sparkles that follow cursor
   const sparklesContainer = document.createElement('div');
   sparklesContainer.classList.add('magic-sparkles');
-  document.body.appendChild(sparklesContainer);
   
-  // Add sparkle elements
-  for (let i = 0; i < 15; i++) {
+  // Use document fragment for batch DOM operations
+  const fragment = document.createDocumentFragment();
+  
+  // Reduce sparkle count from 12 to 8 for better performance
+  for (let i = 0; i < 8; i++) {
     const sparkle = document.createElement('div');
     sparkle.classList.add('sparkle');
     sparkle.style.setProperty('--delay', `${Math.random() * 5}s`);
     sparkle.style.setProperty('--size', `${Math.random() * 8 + 4}px`);
-    sparklesContainer.appendChild(sparkle);
+    // Add will-change property to optimize animation performance
+    sparkle.style.setProperty('will-change', 'opacity, transform');
+    fragment.appendChild(sparkle);
   }
   
-  // Update sparkle positions on mouse move
-  document.addEventListener('mousemove', (e) => {
-    const mouseX = e.clientX;
-    const mouseY = e.clientY;
-    
-    sparklesContainer.style.left = `${mouseX}px`;
-    sparklesContainer.style.top = `${mouseY}px`;
+  sparklesContainer.appendChild(fragment);
+  document.body.appendChild(sparklesContainer);
+  
+  // Use pointer events where supported, falling back to mouse events
+  const hasPointerEvents = window.PointerEvent !== undefined;
+  let isEnabled = true;
+  let lastMove = 0;
+  const mouseMoveThrottle = 32; // Reduce to 30fps for cursor effects
+  
+  // Function to handle cursor movement with throttling
+  const handleMove = (x, y) => {
+    const now = Date.now();
+    if (now - lastMove > mouseMoveThrottle) {
+      lastMove = now;
+      // Use transforms instead of left/top for GPU acceleration
+      sparklesContainer.style.transform = `translate(${x}px, ${y}px)`;
+    }
+  };
+  
+  // Add event handler with improved performance
+  if (hasPointerEvents) {
+    document.addEventListener('pointermove', (e) => {
+      if (isEnabled) handleMove(e.clientX, e.clientY);
+    }, { passive: true });
+  } else {
+    document.addEventListener('mousemove', (e) => {
+      if (isEnabled) handleMove(e.clientX, e.clientY);
+    }, { passive: true });
+  }
+  
+  // Disable effects when tab is not visible to save resources
+  document.addEventListener('visibilitychange', () => {
+    isEnabled = document.visibilityState === 'visible';
   });
   
   // Add magical hover effects to illustrations
   const illustrations = document.querySelectorAll('.illustration img');
+  // Use document fragment for batch DOM operations
+  const illustrationFragment = document.createDocumentFragment();
+  const processedImages = [];
+  
   illustrations.forEach(img => {
     // Create a magical glow container
     const glowContainer = document.createElement('div');
     glowContainer.classList.add('magical-glow');
     
-    // Insert the glow container before the image
-    img.parentNode.insertBefore(glowContainer, img);
+    // Clone the image instead of moving it to avoid potential reference issues
+    const imgClone = img.cloneNode(true);
+    glowContainer.appendChild(imgClone);
     
-    // Move the image inside the glow container
-    glowContainer.appendChild(img);
+    // Store original image to replace later
+    processedImages.push({
+      original: img,
+      replacement: glowContainer
+    });
     
     // Add click handler to make illustrations do a full spin
-    img.addEventListener('click', () => {
-      img.style.transition = 'transform 1s ease';
-      img.style.transform = 'perspective(800px) rotateY(360deg)';
+    imgClone.addEventListener('click', function() {
+      // Don't set inline styles - use class toggle for better performance
+      this.classList.add('spinning');
       
       // Reset after animation completes
       setTimeout(() => {
-        img.style.transition = 'all 0.3s ease';
-        img.style.transform = 'perspective(800px) rotateY(0deg)';
+        this.classList.remove('spinning');
       }, 1000);
     });
+  });
+  
+  // Replace images with enhanced versions in a single batch
+  processedImages.forEach(item => {
+    if (item.original.parentNode) {
+      item.original.parentNode.replaceChild(item.replacement, item.original);
+    }
   });
 }
 
@@ -309,52 +387,121 @@ function initBackToTopButton() {
   const backToTopBtn = document.getElementById('floo-powder-btn');
   if (!backToTopBtn) return;
   
-  // Show button when scrolled down
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > window.innerHeight) {
-      backToTopBtn.classList.add('visible');
-    } else {
-      backToTopBtn.classList.remove('visible');
+  // Cache DOM references and values
+  let ticking = false;
+  let scrollY = window.scrollY;
+  let isButtonVisible = false;
+  const threshold = window.innerHeight; // Cache this value
+  
+  // Add will-change hint for better animation performance
+  backToTopBtn.style.willChange = 'opacity, transform';
+  
+  function updateButtonVisibility() {
+    // Only update DOM if visibility changes
+    const shouldBeVisible = scrollY > threshold;
+    
+    if (shouldBeVisible !== isButtonVisible) {
+      isButtonVisible = shouldBeVisible;
+      
+      if (shouldBeVisible) {
+        backToTopBtn.classList.add('visible');
+      } else {
+        backToTopBtn.classList.remove('visible');
+      }
     }
-  });
+    
+    ticking = false;
+  }
+  
+  // More aggressive throttling - update only every 100ms max
+  let lastScrollHandled = 0;
+  const scrollThreshold = 100; // ms
+  
+  window.addEventListener('scroll', () => {
+    scrollY = window.scrollY;
+    
+    const now = Date.now();
+    if (now - lastScrollHandled < scrollThreshold) {
+      return; // Skip this scroll event entirely
+    }
+    
+    lastScrollHandled = now;
+    
+    if (!ticking) {
+      window.requestAnimationFrame(updateButtonVisibility);
+      ticking = true;
+    }
+  }, { passive: true });
   
   // Scroll to top when clicked
   backToTopBtn.addEventListener('click', () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    // Using 'smooth' scroll behavior only if supported
+    if ('scrollBehavior' in document.documentElement.style) {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    } else {
+      // Fallback for browsers that don't support smooth scrolling
+      window.scrollTo(0, 0);
+    }
+  });
+  
+  // Clean up event handlers when page visibility changes
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      // Force update when page becomes hidden to avoid unnecessary processing
+      ticking = false;
+    }
   });
 }
 
 /**
  * Initialize spell effects
- * Adds audio and visual effects to spell text
+ * Adds audio and visual effects to spell text - optimized for performance
  */
 function initSpellEffects() {
-  // Create audio elements for spell sounds
-  const spellSounds = [
-    { name: 'CRASH!', src: 'sounds/crash.mp3' },
-    { name: 'sproing', src: 'sounds/sproing.mp3' },
-    { name: 'plink', src: 'sounds/plink.mp3' }
-  ];
+  // Create audio elements for spell sounds - use lazy loading
+  const spellSoundsMap = {
+    'CRASH!': 'sounds/crash.mp3',
+    'sproing': 'sounds/sproing.mp3',
+    'plink': 'sounds/plink.mp3'
+  };
   
-  // Add audio elements to the page
-  const audioContainer = document.createElement('div');
-  audioContainer.style.display = 'none';
+  // We'll create audio elements only when needed
+  const audioCache = new Map();
   
-  spellSounds.forEach(sound => {
-    const audio = document.createElement('audio');
-    audio.src = sound.src;
-    audio.setAttribute('data-sfx', sound.name);
-    audio.preload = 'auto';
-    audioContainer.appendChild(audio);
-  });
+  // Function to get or create audio element
+  function getAudio(name) {
+    if (audioCache.has(name)) {
+      return audioCache.get(name);
+    }
+    
+    const src = spellSoundsMap[name];
+    if (!src) return null;
+    
+    const audio = new Audio();
+    audio.src = src;
+    audioCache.set(name, audio);
+    return audio;
+  }
   
-  document.body.appendChild(audioContainer);
-  
-  // Add magical hover effect to SFX text
+  // Add magical hover effect to SFX text - use DocumentFragment for better performance
   const sfxElements = document.querySelectorAll('.sfx');
+  
+  // Use a debounced approach for mouseover events
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+  }
+  
+  // Create a single fragment to append all wand icons at once
+  const fragment = document.createDocumentFragment();
+  
   sfxElements.forEach(sfx => {
     const originalText = sfx.textContent;
     sfx.innerHTML = `<span class="magical-text">${originalText}</span>`;
@@ -365,40 +512,103 @@ function initSpellEffects() {
     wandIcon.innerHTML = '✨';
     sfx.appendChild(wandIcon);
     
-    // Add spell trail animation
-    sfx.addEventListener('mouseover', () => {
+    // Create pool of trail elements for reuse instead of creating/removing each time
+    const trailPool = Array.from({ length: 3 }, () => {
       const trail = document.createElement('div');
       trail.classList.add('spell-trail');
+      trail.style.display = 'none'; // Hide initially
+      sfx.appendChild(trail);
+      return trail;
+    });
+    
+    let trailIndex = 0;
+    
+    // Add debounced spell trail animation
+    sfx.addEventListener('mouseover', debounce(() => {
+      // Get next trail from pool
+      const trail = trailPool[trailIndex];
+      trailIndex = (trailIndex + 1) % trailPool.length;
       
-      // Position the trail along the text
+      // Position and show the trail
+      trail.style.display = 'block';
       trail.style.left = `${Math.random() * 100}%`;
       trail.style.top = `${Math.random() * 100}%`;
       
-      sfx.appendChild(trail);
+      // Remove animation classes and reflow to reset animation
+      trail.classList.remove('animate-trail');
+      void trail.offsetWidth; // Trigger reflow
+      trail.classList.add('animate-trail');
       
-      // Remove the trail after animation completes
+      // Hide after animation completes (not remove - reuse instead)
       setTimeout(() => {
-        trail.remove();
+        trail.style.display = 'none';
+        trail.classList.remove('animate-trail');
       }, 2000);
-    });
+    }, 100));
   });
   
   // Add floating letters effect to chapter headings
   const chapterTitles = document.querySelectorAll('.chapter h2');
-  chapterTitles.forEach(title => {
-    const text = title.textContent;
-    let newHTML = '';
+  
+  // Process titles in batches to prevent UI freezing
+  function processChapterTitles(titles, startIndex, batchSize) {
+    const endIndex = Math.min(startIndex + batchSize, titles.length);
     
-    // Wrap each letter in a span for animation
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === ' ') {
-        newHTML += ' ';
-      } else {
-        newHTML += `<span class="floating-letter" style="--delay: ${i * 0.05}s">${text[i]}</span>`;
+    for (let i = startIndex; i < endIndex; i++) {
+      const title = titles[i];
+      const text = title.textContent;
+      const fragment = document.createDocumentFragment();
+      
+      // Wrap each letter in a span for animation - avoid string concatenation
+      for (let j = 0; j < text.length; j++) {
+        if (text[j] === ' ') {
+          fragment.appendChild(document.createTextNode(' '));
+        } else {
+          const span = document.createElement('span');
+          span.className = 'floating-letter';
+          span.style.setProperty('--delay', `${j * 0.05}s`);
+          span.textContent = text[j];
+          fragment.appendChild(span);
+        }
       }
+      
+      // Use single DOM update
+      title.innerHTML = '';
+      title.appendChild(fragment);
     }
     
-    title.innerHTML = newHTML;
+    // Process next batch if needed
+    if (endIndex < titles.length) {
+      setTimeout(() => {
+        processChapterTitles(titles, endIndex, batchSize);
+      }, 0);
+    }
+  }
+  
+  // Start batch processing
+  if (chapterTitles.length > 0) {
+    processChapterTitles(chapterTitles, 0, 2);
+  }
+  
+  // Observer for playing sounds on SFX elements
+  const sfxObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const sfxName = entry.target.textContent;
+        const audio = getAudio(sfxName);
+        if (audio) {
+          // Clone audio to allow for overlapping sounds
+          audio.cloneNode(true).play().catch(() => {
+            // Silent catch for browsers that block autoplay
+          });
+        }
+      }
+    });
+  }, { threshold: 0.8 });
+  
+  // Observe SFX elements
+  sfxElements.forEach(sfx => {
+    sfxObserver.observe(sfx);
   });
 }
 
@@ -413,242 +623,315 @@ function enhanceStoryElements() {
     "A wide grin spread across Billius's face"
   ];
   
-  // Find and reset paragraphs that contain our target phrases
-  document.querySelectorAll('p').forEach(p => {
-    if (hasAnyPhrase(p.textContent, paragraphsToReset)) {
-      p.classList.remove('emotional', 'climax-moment');
-      // Also remove any styling from spans inside
-      p.querySelectorAll('.dialogue, .magic-object, .clock-reference, .magic-spell, .character-name, .thought').forEach(span => {
-        const text = span.textContent;
-        const textNode = document.createTextNode(text);
-        span.parentNode.replaceChild(textNode, span);
+  // Get all paragraphs and convert to array for batch processing
+  const paragraphsArray = Array.from(document.querySelectorAll('p'));
+  const batchSize = 10;
+  
+  // Cache selectors for better performance
+  const specialClassSelectors = '.dialogue, .magic-object, .clock-reference, .magic-spell, .character-name, .thought';
+  
+  // Process paragraphs to enhance in batches
+  function processParagraphs(startIndex) {
+    const endIndex = Math.min(startIndex + batchSize, paragraphsArray.length);
+    
+    for (let i = startIndex; i < endIndex; i++) {
+      const paragraph = paragraphsArray[i];
+      
+      // Step 1: Reset specific paragraphs that need to be kept normal
+      if (hasAnyPhrase(paragraph.textContent, paragraphsToReset)) {
+        paragraph.classList.remove('emotional', 'climax-moment');
+        // Also remove any styling from spans inside
+        const spans = paragraph.querySelectorAll(specialClassSelectors);
+        spans.forEach(span => {
+          const text = span.textContent;
+          const textNode = document.createTextNode(text);
+          span.parentNode.replaceChild(textNode, span);
+        });
+        continue; // Skip further processing for this paragraph
+      }
+      
+      // Step 2: Create a temporary div for manipulations
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = paragraph.innerHTML;
+      
+      // Step 3: Add strategic styling
+      
+      // Dialogues - strategic selection with optimized RegExp checking
+      const keyDialogues = [
+        "Honestly, Ronin, if you blast your socks through the floorboards one more time",
+        "Mum! Where's my Cleansweep Seven manual",
+        "I don't know!",
+        "You borrowed it? Borrowed it?",
+        "I just wanted to see if it would point to Hogwarts for me",
+        "Try… try Reparo?",
+        "All's well that ends well!",
+        "Ow! Get off!",
+        "Suppose you're not completely hopeless"
+      ];
+      
+      tempDiv.innerHTML = tempDiv.innerHTML.replace(/"([^"<>]+)"/g, (match, content) => {
+        if (keyDialogues.some(dialogue => content.includes(dialogue))) {
+          return `<span class="dialogue">${match}</span>`;
+        }
+        return match;
       });
-    }
-  });
-  
-  // Safely process each paragraph to avoid HTML string contamination
-  const paragraphs = document.querySelectorAll('p');
-  
-  paragraphs.forEach(paragraph => {
-    // Skip the paragraphs we want to keep normal
-    if (hasAnyPhrase(paragraph.textContent, paragraphsToReset)) {
-      return; // Skip this paragraph entirely
-    }
-    
-    // Create a temporary div for manipulations
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = paragraph.innerHTML;
-    
-    // Replace text without affecting existing HTML - strategically selected highlights
-    
-    // Strategically select key dialogue moments
-    const keyDialogues = [
-      "Honestly, Ronin, if you blast your socks through the floorboards one more time, you can patch it up yourself!",
-      "Mum! Where's my Cleansweep Seven manual? It's not in my trunk!",
-      "I don't know!",
-      "You borrowed it? Borrowed it?",
-      "I just wanted to see if it would point to Hogwarts for me",
-      "Try… try Reparo?",
-      "All's well that ends well!",
-      "Ow! Get off!",
-      "Suppose you're not completely hopeless. Might even survive Hogwarts… eventually."
-    ];
-    tempDiv.innerHTML = tempDiv.innerHTML.replace(/"([^"<>]+)"/g, (match, content) => {
-      if (keyDialogues.some(dialogue => content.includes(dialogue))) {
-        return `<span class="dialogue">${match}</span>`;
-      }
-      return match;
-    });
-    
-    // Highlight the clock at strategic moments in the plot
-    const keyClockMoments = [
-      "clock hand went haywire",
-      "detached itself completely from the clock face",
-      "hand was gone",
-      "the Weasley family clock",
-      "hand settled firmly onto its peg",
-      "Billius looked up at the clock, now back to normal"
-    ];
-    tempDiv.innerHTML = tempDiv.innerHTML.replace(/\b(clock('s)? hand|clock face|golden hand)\b/gi, (match) => {
-      if (keyClockMoments.some(moment => tempDiv.textContent.includes(moment))) {
-        return `<span class="clock-reference">${match}</span>`;
-      }
-      return match;
-    });
-    
-    // Only highlight actual spells when cast
-    replaceTextWithSpans(tempDiv, /\b(Accio|Reparo|Finite)\b/g, 'magic-spell');
-    
-    // Highlight character names at strategic story points
-    const keyCharacterMoments = [
-      "Ronin's hand was gone",
-      "panic flooded Billius",
-      "Billius tapped Ronin's hand firmly",
-      "Ronin stared. His ears started to turn red",
-      "Billius swallowed hard",
-      "the hand settled firmly",
-      "for the first time that afternoon, Billius began to smile"
-    ];
-    tempDiv.innerHTML = tempDiv.innerHTML.replace(/\b(Billius|Ronin)\b/g, (match) => {
-      if (keyCharacterMoments.some(moment => tempDiv.textContent.includes(moment))) {
-        return `<span class="character-name">${match}</span>`;
-      }
-      return match;
-    });
-    
-    // Update original paragraph
-    paragraph.innerHTML = tempDiv.innerHTML;
-    
-    // Add appropriate classes to paragraphs based on content - dramatically reduced
-    // Skip the paragraphs we want to keep normal
-    const skipPhrases = [
-      "Walking past them, Dad winked at the boys",
-      "A wide grin spread across Billius's face"
-    ];
-    
-    // Select key emotional moments strategically
-    if (!hasAnyPhrase(paragraph.textContent, skipPhrases) &&
-        hasAnyPhrase(paragraph.textContent, [
+      
+      // Clock references - strategic highlighting
+      const keyClockMoments = [
+        "clock hand went haywire",
+        "detached itself completely from the clock face",
+        "hand was gone",
+        "the Weasley family clock",
+        "hand settled firmly onto its peg",
+        "Billius looked up at the clock"
+      ];
+      
+      tempDiv.innerHTML = tempDiv.innerHTML.replace(/\b(clock('s)? hand|clock face|golden hand)\b/gi, (match) => {
+        if (keyClockMoments.some(moment => tempDiv.textContent.includes(moment))) {
+          return `<span class="clock-reference">${match}</span>`;
+        }
+        return match;
+      });
+      
+      // Magic spells - using optimized replaceTextWithSpans
+      replaceTextWithSpans(tempDiv, /\b(Accio|Reparo|Finite)\b/g, 'magic-spell');
+      
+      // Character highlighting
+      const keyCharacterMoments = [
+        "Ronin's hand was gone",
+        "panic flooded Billius",
+        "Billius tapped Ronin's hand firmly",
+        "Ronin stared. His ears started to turn red",
+        "Billius swallowed hard",
+        "the hand settled firmly",
+        "Billius began to smile"
+      ];
+      
+      tempDiv.innerHTML = tempDiv.innerHTML.replace(/\b(Billius|Ronin)\b/g, (match) => {
+        if (keyCharacterMoments.some(moment => tempDiv.textContent.includes(moment))) {
+          return `<span class="character-name">${match}</span>`;
+        }
+        return match;
+      });
+      
+      // Update original paragraph
+      paragraph.innerHTML = tempDiv.innerHTML;
+      
+      // Step 4: Add paragraph-level styling based on content
+      if (hasAnyPhrase(paragraph.textContent, [
           "panic flooded Billius",
-          "Billius winced. He knew, with dreadful certainty, that this was his fault",
+          "Billius winced",
           "A wave of relief flooded the two brothers",
-          "Billius had a very bad feeling that things were about to get a lot less ordinary"
+          "Billius had a very bad feeling"
         ])) {
-      paragraph.classList.add('emotional');
+        paragraph.classList.add('emotional');
+      }
+      
+      // Climax moments
+      if (hasAnyPhrase(paragraph.textContent, [
+          "the hand settled firmly onto its peg",
+          "Ronin's hand was gone",
+          "Billius tapped Ronin's hand firmly",
+          "With an enraged shriek, the gnome launched itself",
+          "That was Ronin's chance"
+        ])) {
+        paragraph.classList.add('climax-moment');
+      }
     }
     
-    // Highlight a few more climax moments for dramatic effect
-    if (hasAnyPhrase(paragraph.textContent, [
-      "the hand settled firmly onto its peg, snug and secure",
-      "Ronin's hand was gone",
-      "With a sudden, impulsive movement, Billius tapped Ronin's hand firmly",
-      "With an enraged shriek, the gnome launched itself",
-      "That was Ronin's chance"
-    ])) {
-      paragraph.classList.add('climax-moment');
+    // Process next batch if needed
+    if (endIndex < paragraphsArray.length) {
+      setTimeout(() => processParagraphs(endIndex), 0);
+    } else {
+      // After all paragraphs processed, add scene breaks
+      setTimeout(addSceneBreaks, 0);
     }
-  });
+  }
   
   // Add scene breaks for key story transitions
-  const chapterBreaks = document.querySelectorAll('.chapter-content');
-  chapterBreaks.forEach(chapter => {
-    // Add visual breaks at pivotal moments
-    const keyPhrases = [
-      "Ronin's hand wasn't just missing; it was lost.",  // Primary plot point
-      "No one had seen.",  // Key moment when Billius realizes he's in trouble
-      "just had to put it back, and everything would return to normal."  // Resolution approach
-    ];
+  function addSceneBreaks() {
+    const chapterBreaks = document.querySelectorAll('.chapter-content');
     
-    // Find paragraphs containing key phrases
-    const allParagraphs = chapter.querySelectorAll('p');
-    allParagraphs.forEach((para, index) => {
-      if (index < allParagraphs.length - 1) { // Skip the last paragraph
-        keyPhrases.forEach(phrase => {
-          if (para.textContent.includes(phrase)) {
-            // Create scene break
-            const sceneBreak = document.createElement('div');
-            sceneBreak.classList.add('scene-break');
-            para.insertAdjacentElement('afterend', sceneBreak);
-          }
-        });
-      }
-    });
-  });
-  
-  // Make magic spells interactive
-  document.querySelectorAll('.magic-spell').forEach(spell => {
-    spell.addEventListener('click', () => {
-      // Add temporary animation effects
-      const spellTrail = document.createElement('div');
-      spellTrail.style.position = 'fixed';
-      spellTrail.style.top = '0';
-      spellTrail.style.left = '0';
-      spellTrail.style.width = '100%';
-      spellTrail.style.height = '100%';
-      spellTrail.style.pointerEvents = 'none';
-      spellTrail.style.background = `radial-gradient(circle at ${Math.random() * 100}% ${Math.random() * 100}%, rgba(255, 214, 116, 0.4), transparent 70%)`;
-      spellTrail.style.zIndex = '999';
-      spellTrail.style.opacity = '0.7';
-      document.body.appendChild(spellTrail);
+    chapterBreaks.forEach(chapter => {
+      // Add visual breaks at pivotal moments
+      const keyPhrases = [
+        "Ronin's hand wasn't just missing; it was lost.",
+        "No one had seen.",
+        "just had to put it back, and everything would return to normal."
+      ];
       
-      // Animate the spell trail
-      spellTrail.animate([
-        { opacity: 0.7, transform: 'scale(0.1)' },
-        { opacity: 0, transform: 'scale(3)' }
-      ], {
-        duration: 1000,
-        easing: 'ease-out'
-      }).onfinish = () => {
-        spellTrail.remove();
-      };
+      // Find paragraphs containing key phrases
+      const allParagraphs = chapter.querySelectorAll('p');
+      
+      allParagraphs.forEach((para, index) => {
+        if (index < allParagraphs.length - 1) { // Skip the last paragraph
+          keyPhrases.forEach(phrase => {
+            if (para.textContent.includes(phrase)) {
+              // Create scene break
+              const sceneBreak = document.createElement('div');
+              sceneBreak.classList.add('scene-break');
+              para.insertAdjacentElement('afterend', sceneBreak);
+            }
+          });
+        }
+      });
     });
-  });
+    
+    // Final step - make spell elements interactive
+    initSpellInteractions();
+  }
+  
+  // Initialize interactive spell elements
+  function initSpellInteractions() {
+    document.querySelectorAll('.magic-spell').forEach(spell => {
+      spell.addEventListener('click', () => {
+        // Create and reuse spell trail element
+        const spellTrail = document.createElement('div');
+        spellTrail.style.position = 'fixed';
+        spellTrail.style.top = '0';
+        spellTrail.style.left = '0';
+        spellTrail.style.width = '100%';
+        spellTrail.style.height = '100%';
+        spellTrail.style.pointerEvents = 'none';
+        spellTrail.style.background = `radial-gradient(circle at ${Math.random() * 100}% ${Math.random() * 100}%, rgba(255, 214, 116, 0.4), transparent 70%)`;
+        spellTrail.style.zIndex = '999';
+        spellTrail.style.opacity = '0.7';
+        document.body.appendChild(spellTrail);
+        
+        // Animate with Web Animations API for better performance
+        const animation = spellTrail.animate([
+          { opacity: 0.7, transform: 'scale(0.1)' },
+          { opacity: 0, transform: 'scale(3)' }
+        ], {
+          duration: 1000,
+          easing: 'ease-out'
+        });
+        
+        animation.onfinish = () => {
+          spellTrail.remove();
+        };
+      });
+    });
+  }
+  
+  // Start the batch processing
+  processParagraphs(0);
 }
 
 /**
  * Helper function to safely replace text with spans in HTML
+ * Optimized version with better memory management and performance
+ * 
  * @param {Element} element - The DOM element to process
  * @param {RegExp} regex - The regex pattern to match
  * @param {string} className - The class name to add to the spans
  * @param {boolean} addEmoji - Whether to add an emoji after the element
  */
 function replaceTextWithSpans(element, regex, className, addEmoji = false) {
-  const walk = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
-  const nodesToReplace = [];
+  // Create a document fragment to minimize DOM operations
+  const finalFragment = document.createDocumentFragment();
+  const specialClasses = ['dialogue', 'magic-object', 'clock-reference', 'magic-spell', 'character-name', 'floating-letter', 'magical-text'];
   
-  // First pass: collect nodes to replace
-  while (walk.nextNode()) {
-    const node = walk.currentNode;
-    if (node.parentElement && !isInSpecialElement(node.parentElement)) {
-      nodesToReplace.push(node);
+  // Create a function for the check to avoid repeated calls
+  function isSpecialElement(el) {
+    if (!el || !el.classList) return false;
+    
+    // Check direct class
+    for (let i = 0; i < specialClasses.length; i++) {
+      if (el.classList.contains(specialClasses[i])) {
+        return true;
+      }
     }
+    
+    // Check ancestors (limiting depth to improve performance)
+    let parent = el.parentElement;
+    let depth = 0;
+    const maxDepth = 3; // Limit ancestor checks to 3 levels up
+    
+    while (parent && depth < maxDepth) {
+      for (let i = 0; i < specialClasses.length; i++) {
+        if (parent.classList && parent.classList.contains(specialClasses[i])) {
+          return true;
+        }
+      }
+      parent = parent.parentElement;
+      depth++;
+    }
+    
+    return false;
   }
   
-  // Second pass: replace nodes
-  nodesToReplace.forEach(node => {
-    const text = node.nodeValue;
-    const fragment = document.createDocumentFragment();
-    let lastIndex = 0;
-    let match;
+  // Process nodes using TreeWalker for better performance
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: function(node) {
+        // Skip empty text nodes and nodes in special elements
+        return (node.nodeValue.trim() && !isSpecialElement(node.parentElement))
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
+      }
+    },
+    false
+  );
+  
+  const nodesToReplace = [];
+  let currentNode;
+  
+  // Collect nodes to replace (faster than modifying during traversal)
+  while (currentNode = walker.nextNode()) {
+    nodesToReplace.push(currentNode);
+  }
+  
+  // Process nodes in batches to reduce layout thrashing
+  const batchSize = 5;
+  for (let i = 0; i < nodesToReplace.length; i += batchSize) {
+    const batch = nodesToReplace.slice(i, i + batchSize);
     
-    while ((match = regex.exec(text)) !== null) {
-      // Add text before the match
-      if (match.index > lastIndex) {
-        fragment.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+    batch.forEach(node => {
+      const text = node.nodeValue;
+      const fragment = document.createDocumentFragment();
+      let lastIndex = 0;
+      let match;
+      
+      // Reset lastIndex for the regex
+      regex.lastIndex = 0;
+      
+      while ((match = regex.exec(text)) !== null) {
+        // Add text before the match
+        if (match.index > lastIndex) {
+          fragment.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+        }
+        
+        // Create span for the match
+        const span = document.createElement('span');
+        span.className = className;
+        span.textContent = match[0];
+        fragment.appendChild(span);
+        
+        lastIndex = match.index + match[0].length;
+        
+        // Handle non-global regexes
+        if (!regex.global) break;
       }
       
-      // Create span for the match
-      const span = document.createElement('span');
-      span.className = className;
-      span.textContent = match[0];
-      fragment.appendChild(span);
+      // Add remaining text
+      if (lastIndex < text.length) {
+        fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+      }
       
-      lastIndex = match.index + match[0].length;
-    }
+      // Replace the original node with the fragment
+      if (node.parentNode) {
+        node.parentNode.replaceChild(fragment, node);
+      }
+    });
     
-    // Add remaining text
-    if (lastIndex < text.length) {
-      fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
-    }
-    
-    // Replace the original node with the fragment
-    node.parentNode.replaceChild(fragment, node);
-  });
-}
-
-/**
- * Check if an element is already a special element we don't want to process
- * @param {Element} element - The DOM element to check
- * @returns {boolean} - Whether the element is a special element
- */
-function isInSpecialElement(element) {
-  const specialClasses = ['dialogue', 'magic-object', 'clock-reference', 'magic-spell', 'character-name', 'floating-letter', 'magical-text'];
-  for (const cls of specialClasses) {
-    if (element.classList.contains(cls) || element.closest(`.${cls}`)) {
-      return true;
+    // Allow browser to paint between batches if needed
+    if (i + batchSize < nodesToReplace.length && nodesToReplace.length > 50) {
+      setTimeout(() => {}, 0);
     }
   }
-  return false;
 }
 
 /**
