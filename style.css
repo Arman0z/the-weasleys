@@ -302,6 +302,19 @@ main {
   box-shadow: 0 0 15px rgba(255, 214, 116, 0.2);
 }
 
+.epilogue-image {
+  float: none !important;
+  max-width: 70% !important;
+  margin: var(--spacing-md) auto !important;
+  display: block;
+  transform: scale(1.1);
+  transition: transform 0.5s ease;
+}
+
+.epilogue-image:hover {
+  transform: scale(1.15);
+}
+
 @keyframes sparkleWand {
   0% { transform: scale(1) rotate(0deg); opacity: 0.7; }
   100% { transform: scale(1.2) rotate(15deg); opacity: 1; }
@@ -311,13 +324,67 @@ main {
 .illustration {
   margin: var(--spacing-md) 0;
   text-align: center;
+  position: relative;
 }
 
 .illustration img {
   max-width: 100%;
   height: auto;
-  border-radius: 4px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  transform: perspective(800px) rotateY(0deg);
+}
+
+.illustration img:hover {
+  transform: perspective(800px) rotateY(5deg);
+  box-shadow: -10px 5px 20px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+
+/* Special illustration styles based on content */
+.illustration img[alt*="Billius looking slightly sad"] {
+  border: 4px solid var(--weasley-maroon);
+  box-shadow: 0 8px 20px rgba(125, 43, 43, 0.3);
+}
+
+.illustration img[alt*="magical couldron cooking stew"] {
+  border: 4px solid var(--weasley-orange);
+  box-shadow: 0 8px 20px rgba(231, 132, 41, 0.4);
+}
+
+.illustration img[alt*="about to touch the magic family clock"] {
+  border: 4px solid var(--weasley-gold);
+  box-shadow: 0 8px 20px rgba(255, 214, 116, 0.4);
+}
+
+.illustration img[alt*="freaking out because he just broke the clock"] {
+  border: 4px solid var(--weasley-red);
+  box-shadow: 0 8px 20px rgba(211, 85, 54, 0.4);
+}
+
+.illustration img[alt*="very peaceful and back to normal"] {
+  border: 4px solid var(--weasley-navy);
+  box-shadow: 0 8px 20px rgba(26, 48, 69, 0.4);
+}
+
+/* Add a glowing effect to the restored clock image */
+.clock-restored img {
+  animation: clockPulse 4s infinite alternate;
+}
+
+@keyframes clockPulse {
+  0% {
+    box-shadow: 0 0 10px 2px rgba(255, 214, 116, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 25px 8px rgba(255, 214, 116, 0.8);
+  }
+}
+
+.illustration img[alt*="Ronin getting bitten by the gnome"] {
+  border: 4px solid var(--weasley-orange);
+  box-shadow: 0 8px 20px rgba(231, 132, 41, 0.4);
 }
 
 /* Alternate image float */

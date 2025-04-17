@@ -286,6 +286,18 @@ function initGnomePopups() {
     
     // Move the image inside the glow container
     glowContainer.appendChild(img);
+    
+    // Add click handler to make illustrations do a full spin
+    img.addEventListener('click', () => {
+      img.style.transition = 'transform 1s ease';
+      img.style.transform = 'perspective(800px) rotateY(360deg)';
+      
+      // Reset after animation completes
+      setTimeout(() => {
+        img.style.transition = 'all 0.3s ease';
+        img.style.transform = 'perspective(800px) rotateY(0deg)';
+      }, 1000);
+    });
   });
 }
 

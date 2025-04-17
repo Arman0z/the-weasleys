@@ -1,5 +1,18 @@
 # The Weasleys - Magical Website
 
+An interactive storytelling experience featuring the Weasley family from the wizarding world. This website combines magical animations, interactive elements, and captivating illustrations to bring the story of young Billius Weasley to life as he discovers the enchanted family clock.
+
+## Project Purpose
+
+This website was designed to:
+
+1. **Create an Immersive Reading Experience**: Blend digital storytelling with interactive elements that respond to user actions
+2. **Showcase Magical Effects**: Implement subtle animations and visual effects that enhance the wizarding world atmosphere
+3. **Present an Accessible Story**: Deliver a responsive experience that works across devices while maintaining accessibility standards
+4. **Demonstrate Creative Web Development**: Use vanilla HTML, CSS, and JavaScript to create engaging interactive fiction
+
+The story follows young Billius Weasley who, envious of his brother's upcoming departure to Hogwarts, accidentally awakens unexpected magic in the family's enchanted clock.
+
 This README provides instructions for opening the website locally and replacing the placeholder images with final artwork.
 
 ## Opening the Website Locally
@@ -73,3 +86,19 @@ The website includes several accessibility features:
 - All JavaScript is contained in `script.js` using ES modules
 - CSS uses modern features like CSS Grid, Flexbox, and custom properties
 - The website is fully responsive and works on mobile devices
+
+## Interactive Features
+
+The website includes several interactive elements to enhance the storytelling experience:
+
+1. **Animated Weasley Clock**: An interactive SVG clock with family members' hands that move based on the story context. Hovering over the clock creates magical effects.
+
+2. **Cursor Magic**: Golden sparkles follow the mouse cursor throughout the site, creating a magical atmosphere.
+
+3. **Magical Text Effects**: Dialog sections feature animated text with magical effects when hovered.
+
+4. **Illustration Interactions**: Images come alive with magical glows when interacted with.
+
+5. **Chapter Transitions**: Each chapter fades in with subtle animations as you scroll.
+
+6. **Floo Powder Button**: A themed back-to-top button that brings you back to the start of the story.
