@@ -81,6 +81,51 @@ h1 {
                0 0 20px rgba(255, 214, 116, 0.5);
 }
 
+/* Magical gradient text animation for the byline */
+.magical-gradient-text {
+  font-weight: 600;
+  background-image: linear-gradient(
+    120deg,
+    var(--weasley-gold),
+    var(--weasley-red),
+    var(--weasley-orange),
+    var(--weasley-maroon),
+    var(--weasley-gold)
+  );
+  background-size: 300% 300%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  display: inline-block;
+  animation: magicalShimmer 8s ease infinite;
+  text-shadow: none;
+  position: relative;
+}
+
+.magical-gradient-text::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: inherit;
+  background-size: inherit;
+  filter: blur(12px);
+  opacity: 0.3;
+  z-index: -1;
+  border-radius: 4px;
+  animation: magicalShimmer 8s ease infinite;
+}
+
+@keyframes magicalShimmer {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 50% 100%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 0%; }
+  100% { background-position: 0% 50%; }
+}
+
 h2 {
   font-size: 2.25rem;
   margin-bottom: var(--spacing-md);
@@ -108,6 +153,23 @@ h2 {
   position: relative;
   padding: 0 10px;
   cursor: pointer;
+  background-color: rgba(255, 214, 116, 0.2);
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(255, 214, 116, 0.3);
+  transition: all 0.3s ease;
+  animation: pulse 2s infinite alternate;
+}
+
+.sfx:hover {
+  background-color: rgba(255, 214, 116, 0.3);
+  box-shadow: 0 0 12px rgba(255, 214, 116, 0.5);
+  transform: scale(1.05);
+  animation-play-state: paused;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.03); }
 }
 
 .magical-text {
@@ -202,8 +264,13 @@ h2 {
 }
 
 .byline {
-  font-size: 1.5rem;
+  font-size: 1.7rem;
   font-style: italic;
+  position: relative;
+  z-index: 2;
+  letter-spacing: 0.5px;
+  margin-top: -0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* Main content container */
@@ -246,11 +313,50 @@ main {
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.5s ease, transform 0.5s ease;
+  overflow: hidden;
 }
 
 .chapter.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.chapter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(to right, var(--weasley-gold), var(--weasley-red), var(--weasley-gold));
+  opacity: 0;
+  transition: opacity 0.8s ease 0.3s;
+}
+
+.chapter.visible::before {
+  opacity: 0.7;
+}
+
+.chapter h2 {
+  position: relative;
+  display: inline-block;
+}
+
+.chapter h2::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--weasley-maroon), transparent);
+  transform: scaleX(0);
+  transition: transform 0.5s ease;
+  transform-origin: left;
+}
+
+.chapter.visible h2::after {
+  transform: scaleX(1);
 }
 
 /* Alternate chapter backgrounds */
@@ -487,6 +593,135 @@ main {
   opacity: 0.7;
 }
 
+/* Magic object highlights */
+.magic-object {
+  display: inline-block;
+  font-weight: bold;
+  color: var(--weasley-navy);
+  text-decoration: none;
+  background: linear-gradient(to right, rgba(231, 132, 41, 0.1) 0%, rgba(231, 132, 41, 0.1) 100%);
+  background-size: 100% 0.3em;
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  text-shadow: 0px 0px 2px rgba(255, 214, 116, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.magic-object:hover {
+  color: var(--weasley-red);
+  background-size: 100% 0.5em;
+  transform: translateY(-2px);
+}
+
+/* Magical clock specific styling */
+.clock-reference {
+  position: relative;
+  font-weight: bold;
+  color: var(--weasley-navy);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  text-shadow: 0 0 1px rgba(26, 48, 69, 0.3);
+  padding: 0 3px;
+  background: linear-gradient(120deg, transparent, rgba(255, 214, 116, 0.1) 50%, transparent);
+}
+
+/* Removed the clock emoji animation */
+
+.clock-reference:hover {
+  color: var(--weasley-maroon);
+  background: linear-gradient(120deg, transparent, rgba(255, 214, 116, 0.3) 50%, transparent);
+}
+
+/* Story climax highlight */
+.climax-moment {
+  position: relative;
+  overflow: hidden;
+}
+
+.climax-moment::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+                rgba(211, 85, 54, 0.08),
+                rgba(211, 85, 54, 0.01) 10%, 
+                rgba(211, 85, 54, 0) 45%,
+                rgba(211, 85, 54, 0) 55%, 
+                rgba(211, 85, 54, 0.01) 90%,
+                rgba(211, 85, 54, 0.08));
+  z-index: -1;
+  animation: climaticPulse 5s ease-in-out infinite;
+}
+
+@keyframes climaticPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* First-person thoughts */
+.thought {
+  font-style: italic;
+  opacity: 0.9;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.thought::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--weasley-navy), transparent);
+  opacity: 0.3;
+  transition: all 0.3s ease;
+}
+
+.thought:hover {
+  opacity: 1;
+}
+
+.thought:hover::before {
+  opacity: 0.6;
+  height: 2px;
+}
+
+/* Character name styling */
+.character-name {
+  font-weight: 600;
+  color: var(--weasley-maroon);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.character-name::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--weasley-gold);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+  transform-origin: right;
+}
+
+.character-name:hover {
+  color: var(--weasley-red);
+}
+
+.character-name:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
 /* Back to top button */
 .back-to-top {
   position: fixed;
@@ -545,6 +780,137 @@ footer {
 .footer-content {
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.creator-credit {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-style: italic;
+  margin-top: -0.25rem;
+}
+
+/* Special dialogue styling */
+.dialogue {
+  position: relative;
+  display: inline-block;
+  font-style: italic;
+  color: var(--weasley-maroon);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.dialogue::before {
+  content: """;
+  position: absolute;
+  left: -0.4em;
+  color: var(--weasley-gold);
+  font-size: 1.5em;
+  top: -0.2em;
+}
+
+.dialogue::after {
+  content: """;
+  position: absolute;
+  color: var(--weasley-gold);
+  font-size: 1.5em;
+  margin-left: 0.1em;
+}
+
+.dialogue:hover {
+  color: var(--weasley-red);
+  transform: scale(1.02);
+}
+
+/* Magic spell effect */
+.magic-spell {
+  font-weight: bold;
+  color: var(--weasley-navy);
+  display: inline-block;
+  padding: 0 6px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.magic-spell::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--weasley-gold), transparent);
+  transform: scaleX(0.7);
+  transition: all 0.5s ease;
+}
+
+.magic-spell:hover::before {
+  transform: scaleX(1);
+  background: linear-gradient(90deg, transparent, var(--weasley-red), transparent);
+  height: 4px;
+}
+
+.magic-spell:hover {
+  color: var(--weasley-maroon);
+  text-shadow: 0 0 2px rgba(125, 43, 43, 0.3);
+}
+
+/* Scene transition effect */
+.scene-break {
+  text-align: center;
+  margin: var(--spacing-md) 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--weasley-gold), transparent);
+  position: relative;
+  opacity: 0.7;
+}
+
+.scene-break::before,
+.scene-break::after {
+  content: '✨';
+  position: absolute;
+  top: -10px;
+  font-size: 1.2rem;
+  color: var(--weasley-gold);
+  animation: twinkle 2s infinite alternate;
+}
+
+.scene-break::before {
+  left: calc(50% - 50px);
+}
+
+.scene-break::after {
+  right: calc(50% - 50px);
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.5; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Emotional moment highlight */
+.emotional {
+  position: relative;
+  border-left: 3px solid var(--weasley-orange);
+  padding-left: 15px;
+  margin-left: 10px;
+  font-style: italic;
+}
+
+.emotional::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(231, 132, 41, 0.1), transparent);
+  z-index: -1;
+  border-radius: 4px;
 }
 
 /* ---------- ANIMATIONS ---------- */

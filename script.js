@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initGnomePopups();
   initBackToTopButton();
   initSpellEffects();
+  enhanceStoryElements();
 });
 
 /**
@@ -355,7 +356,8 @@ function initSpellEffects() {
   // Add magical hover effect to SFX text
   const sfxElements = document.querySelectorAll('.sfx');
   sfxElements.forEach(sfx => {
-    sfx.innerHTML = `<span class="magical-text">${sfx.textContent}</span>`;
+    const originalText = sfx.textContent;
+    sfx.innerHTML = `<span class="magical-text">${originalText}</span>`;
     
     // Add magic wand icon
     const wandIcon = document.createElement('span');
@@ -398,6 +400,266 @@ function initSpellEffects() {
     
     title.innerHTML = newHTML;
   });
+}
+
+/**
+ * Enhance story elements with interactive features
+ * Adds special styling to dialogues, magical objects, and emphasizes key moments
+ */
+function enhanceStoryElements() {
+  // First, clear specific paragraphs of any special styling
+  const paragraphsToReset = [
+    "Walking past them, Dad winked at the boys",
+    "A wide grin spread across Billius's face"
+  ];
+  
+  // Find and reset paragraphs that contain our target phrases
+  document.querySelectorAll('p').forEach(p => {
+    if (hasAnyPhrase(p.textContent, paragraphsToReset)) {
+      p.classList.remove('emotional', 'climax-moment');
+      // Also remove any styling from spans inside
+      p.querySelectorAll('.dialogue, .magic-object, .clock-reference, .magic-spell, .character-name, .thought').forEach(span => {
+        const text = span.textContent;
+        const textNode = document.createTextNode(text);
+        span.parentNode.replaceChild(textNode, span);
+      });
+    }
+  });
+  
+  // Safely process each paragraph to avoid HTML string contamination
+  const paragraphs = document.querySelectorAll('p');
+  
+  paragraphs.forEach(paragraph => {
+    // Skip the paragraphs we want to keep normal
+    if (hasAnyPhrase(paragraph.textContent, paragraphsToReset)) {
+      return; // Skip this paragraph entirely
+    }
+    
+    // Create a temporary div for manipulations
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = paragraph.innerHTML;
+    
+    // Replace text without affecting existing HTML - strategically selected highlights
+    
+    // Strategically select key dialogue moments
+    const keyDialogues = [
+      "Honestly, Ronin, if you blast your socks through the floorboards one more time, you can patch it up yourself!",
+      "Mum! Where's my Cleansweep Seven manual? It's not in my trunk!",
+      "I don't know!",
+      "You borrowed it? Borrowed it?",
+      "I just wanted to see if it would point to Hogwarts for me",
+      "Try… try Reparo?",
+      "All's well that ends well!",
+      "Ow! Get off!",
+      "Suppose you're not completely hopeless. Might even survive Hogwarts… eventually."
+    ];
+    tempDiv.innerHTML = tempDiv.innerHTML.replace(/"([^"<>]+)"/g, (match, content) => {
+      if (keyDialogues.some(dialogue => content.includes(dialogue))) {
+        return `<span class="dialogue">${match}</span>`;
+      }
+      return match;
+    });
+    
+    // Highlight the clock at strategic moments in the plot
+    const keyClockMoments = [
+      "clock hand went haywire",
+      "detached itself completely from the clock face",
+      "hand was gone",
+      "the Weasley family clock",
+      "hand settled firmly onto its peg",
+      "Billius looked up at the clock, now back to normal"
+    ];
+    tempDiv.innerHTML = tempDiv.innerHTML.replace(/\b(clock('s)? hand|clock face|golden hand)\b/gi, (match) => {
+      if (keyClockMoments.some(moment => tempDiv.textContent.includes(moment))) {
+        return `<span class="clock-reference">${match}</span>`;
+      }
+      return match;
+    });
+    
+    // Only highlight actual spells when cast
+    replaceTextWithSpans(tempDiv, /\b(Accio|Reparo|Finite)\b/g, 'magic-spell');
+    
+    // Highlight character names at strategic story points
+    const keyCharacterMoments = [
+      "Ronin's hand was gone",
+      "panic flooded Billius",
+      "Billius tapped Ronin's hand firmly",
+      "Ronin stared. His ears started to turn red",
+      "Billius swallowed hard",
+      "the hand settled firmly",
+      "for the first time that afternoon, Billius began to smile"
+    ];
+    tempDiv.innerHTML = tempDiv.innerHTML.replace(/\b(Billius|Ronin)\b/g, (match) => {
+      if (keyCharacterMoments.some(moment => tempDiv.textContent.includes(moment))) {
+        return `<span class="character-name">${match}</span>`;
+      }
+      return match;
+    });
+    
+    // Update original paragraph
+    paragraph.innerHTML = tempDiv.innerHTML;
+    
+    // Add appropriate classes to paragraphs based on content - dramatically reduced
+    // Skip the paragraphs we want to keep normal
+    const skipPhrases = [
+      "Walking past them, Dad winked at the boys",
+      "A wide grin spread across Billius's face"
+    ];
+    
+    // Select key emotional moments strategically
+    if (!hasAnyPhrase(paragraph.textContent, skipPhrases) &&
+        hasAnyPhrase(paragraph.textContent, [
+          "panic flooded Billius",
+          "Billius winced. He knew, with dreadful certainty, that this was his fault",
+          "A wave of relief flooded the two brothers",
+          "Billius had a very bad feeling that things were about to get a lot less ordinary"
+        ])) {
+      paragraph.classList.add('emotional');
+    }
+    
+    // Highlight a few more climax moments for dramatic effect
+    if (hasAnyPhrase(paragraph.textContent, [
+      "the hand settled firmly onto its peg, snug and secure",
+      "Ronin's hand was gone",
+      "With a sudden, impulsive movement, Billius tapped Ronin's hand firmly",
+      "With an enraged shriek, the gnome launched itself",
+      "That was Ronin's chance"
+    ])) {
+      paragraph.classList.add('climax-moment');
+    }
+  });
+  
+  // Add scene breaks for key story transitions
+  const chapterBreaks = document.querySelectorAll('.chapter-content');
+  chapterBreaks.forEach(chapter => {
+    // Add visual breaks at pivotal moments
+    const keyPhrases = [
+      "Ronin's hand wasn't just missing; it was lost.",  // Primary plot point
+      "No one had seen.",  // Key moment when Billius realizes he's in trouble
+      "just had to put it back, and everything would return to normal."  // Resolution approach
+    ];
+    
+    // Find paragraphs containing key phrases
+    const allParagraphs = chapter.querySelectorAll('p');
+    allParagraphs.forEach((para, index) => {
+      if (index < allParagraphs.length - 1) { // Skip the last paragraph
+        keyPhrases.forEach(phrase => {
+          if (para.textContent.includes(phrase)) {
+            // Create scene break
+            const sceneBreak = document.createElement('div');
+            sceneBreak.classList.add('scene-break');
+            para.insertAdjacentElement('afterend', sceneBreak);
+          }
+        });
+      }
+    });
+  });
+  
+  // Make magic spells interactive
+  document.querySelectorAll('.magic-spell').forEach(spell => {
+    spell.addEventListener('click', () => {
+      // Add temporary animation effects
+      const spellTrail = document.createElement('div');
+      spellTrail.style.position = 'fixed';
+      spellTrail.style.top = '0';
+      spellTrail.style.left = '0';
+      spellTrail.style.width = '100%';
+      spellTrail.style.height = '100%';
+      spellTrail.style.pointerEvents = 'none';
+      spellTrail.style.background = `radial-gradient(circle at ${Math.random() * 100}% ${Math.random() * 100}%, rgba(255, 214, 116, 0.4), transparent 70%)`;
+      spellTrail.style.zIndex = '999';
+      spellTrail.style.opacity = '0.7';
+      document.body.appendChild(spellTrail);
+      
+      // Animate the spell trail
+      spellTrail.animate([
+        { opacity: 0.7, transform: 'scale(0.1)' },
+        { opacity: 0, transform: 'scale(3)' }
+      ], {
+        duration: 1000,
+        easing: 'ease-out'
+      }).onfinish = () => {
+        spellTrail.remove();
+      };
+    });
+  });
+}
+
+/**
+ * Helper function to safely replace text with spans in HTML
+ * @param {Element} element - The DOM element to process
+ * @param {RegExp} regex - The regex pattern to match
+ * @param {string} className - The class name to add to the spans
+ * @param {boolean} addEmoji - Whether to add an emoji after the element
+ */
+function replaceTextWithSpans(element, regex, className, addEmoji = false) {
+  const walk = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+  const nodesToReplace = [];
+  
+  // First pass: collect nodes to replace
+  while (walk.nextNode()) {
+    const node = walk.currentNode;
+    if (node.parentElement && !isInSpecialElement(node.parentElement)) {
+      nodesToReplace.push(node);
+    }
+  }
+  
+  // Second pass: replace nodes
+  nodesToReplace.forEach(node => {
+    const text = node.nodeValue;
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before the match
+      if (match.index > lastIndex) {
+        fragment.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+      }
+      
+      // Create span for the match
+      const span = document.createElement('span');
+      span.className = className;
+      span.textContent = match[0];
+      fragment.appendChild(span);
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+    }
+    
+    // Replace the original node with the fragment
+    node.parentNode.replaceChild(fragment, node);
+  });
+}
+
+/**
+ * Check if an element is already a special element we don't want to process
+ * @param {Element} element - The DOM element to check
+ * @returns {boolean} - Whether the element is a special element
+ */
+function isInSpecialElement(element) {
+  const specialClasses = ['dialogue', 'magic-object', 'clock-reference', 'magic-spell', 'character-name', 'floating-letter', 'magical-text'];
+  for (const cls of specialClasses) {
+    if (element.classList.contains(cls) || element.closest(`.${cls}`)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if a string contains any of the given phrases
+ * @param {string} text - The text to check
+ * @param {Array<string>} phrases - The phrases to look for
+ * @returns {boolean} - Whether the text contains any of the phrases
+ */
+function hasAnyPhrase(text, phrases) {
+  const lowerText = text.toLowerCase();
+  return phrases.some(phrase => lowerText.includes(phrase.toLowerCase()));
 }
 
 /**
